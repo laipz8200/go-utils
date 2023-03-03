@@ -2,6 +2,7 @@ package memcache
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -32,7 +33,7 @@ func TestSet(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			Set(tt.args.key, tt.args.value)
+			Set(tt.args.key, tt.args.value, 0)
 			got, ok := Get(tt.args.key)
 			asserts := assert.New(t)
 			asserts.True(ok)
@@ -46,7 +47,7 @@ func TestSetWithTTL(t *testing.T) {
 		key    string
 		useKey string
 		value  any
-		ttl    int64
+		ttl    time.Duration
 	}
 	tests := []struct {
 		name   string
@@ -60,7 +61,7 @@ func TestSetWithTTL(t *testing.T) {
 				key:    "key 1",
 				useKey: "key 1",
 				value:  "value 1",
-				ttl:    10,
+				ttl:    1 * time.Second,
 			},
 			want:   "value 1",
 			wantOk: true,
@@ -71,7 +72,7 @@ func TestSetWithTTL(t *testing.T) {
 				key:    "key 2",
 				useKey: "key 2",
 				value:  "value 2",
-				ttl:    1,
+				ttl:    1 * time.Second,
 			},
 			want:   "value 2",
 			wantOk: true,
@@ -82,7 +83,7 @@ func TestSetWithTTL(t *testing.T) {
 				key:    "key 1",
 				useKey: "key 1",
 				value:  "value 1",
-				ttl:    -1,
+				ttl:    -1 * time.Second,
 			},
 			want:   nil,
 			wantOk: false,
@@ -93,7 +94,7 @@ func TestSetWithTTL(t *testing.T) {
 				key:    "key 1",
 				useKey: "key 2",
 				value:  "value 1",
-				ttl:    10,
+				ttl:    10 * time.Second,
 			},
 			want:   nil,
 			wantOk: false,
@@ -101,10 +102,10 @@ func TestSetWithTTL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cache = &memcache{
+			cache = &memCache{
 				store: map[string]item{},
 			}
-			SetWithTTL(tt.args.key, tt.args.value, tt.args.ttl)
+			Set(tt.args.key, tt.args.value, tt.args.ttl)
 			got, ok := Get(tt.args.useKey)
 			asserts := assert.New(t)
 			asserts.Equal(tt.wantOk, ok)
@@ -130,7 +131,7 @@ func TestRemove(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			Set(tt.args.key, "some value")
+			Set(tt.args.key, "some value", 0)
 			got, ok := Get(tt.args.key)
 
 			asserts := assert.New(t)

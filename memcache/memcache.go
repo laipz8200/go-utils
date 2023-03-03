@@ -5,32 +5,31 @@ import (
 	"time"
 )
 
-var cache = &memcache{
-	store: map[string]item{},
-}
+var cache = NewCache()
 
 type item struct {
-	value any
-	ttl   int64
+	value  any
+	expire time.Time
 }
 
-type memcache struct {
+type memCache struct {
 	mu    sync.Mutex
 	store map[string]item
 }
 
-func (m *memcache) setWithTTL(key string, value any, ttl int64) {
+func (m *memCache) Set(key string, value any, ttl time.Duration) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
+	var t time.Time
 	if ttl != 0 {
-		ttl = time.Now().Unix() + ttl
+		t = time.Now().Add(ttl)
 	}
 
-	m.store[key] = item{value: value, ttl: ttl}
+	m.store[key] = item{value: value, expire: t}
 }
 
-func (m *memcache) get(key string) (any, bool) {
+func (m *memCache) Get(key string) (any, bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -39,7 +38,7 @@ func (m *memcache) get(key string) (any, bool) {
 		return nil, false
 	}
 
-	if item.ttl == 0 || item.ttl > time.Now().Unix() {
+	if item.expire.IsZero() || item.expire.After(time.Now()) {
 		return item.value, ok
 	}
 
@@ -47,8 +46,15 @@ func (m *memcache) get(key string) (any, bool) {
 	return nil, false
 }
 
-func (m *memcache) remove(key string) {
+func (m *memCache) Remove(key string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	delete(m.store, key)
+}
+
+func NewCache() *memCache {
+	return &memCache{
+		mu:    sync.Mutex{},
+		store: map[string]item{},
+	}
 }

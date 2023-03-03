@@ -2,6 +2,7 @@ package memcache
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -10,7 +11,7 @@ func Test_memcache(t *testing.T) {
 	type args struct {
 		key   string
 		value any
-		ttl   int64
+		ttl   time.Duration
 	}
 	tests := []struct {
 		name   string
@@ -35,7 +36,7 @@ func Test_memcache(t *testing.T) {
 			args: args{
 				key:   "key 1",
 				value: nil,
-				ttl:   1,
+				ttl:   1 * time.Second,
 			},
 			key:    "key 2",
 			want:   nil,
@@ -46,7 +47,7 @@ func Test_memcache(t *testing.T) {
 			args: args{
 				key:   "key 1",
 				value: "value 1",
-				ttl:   -1,
+				ttl:   -1 * time.Second,
 			},
 			key:    "key 1",
 			want:   nil,
@@ -55,11 +56,11 @@ func Test_memcache(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := &memcache{
+			m := &memCache{
 				store: map[string]item{},
 			}
-			m.setWithTTL(tt.args.key, tt.args.value, tt.args.ttl)
-			got, ok := m.get(tt.key)
+			m.Set(tt.args.key, tt.args.value, tt.args.ttl)
+			got, ok := m.Get(tt.key)
 
 			asserts := assert.New(t)
 			asserts.Equal(tt.want, got)
@@ -87,8 +88,8 @@ func Test_memcache_remove(t *testing.T) {
 			fields: fields{
 				store: map[string]item{
 					"key1": {
-						value: "value 1",
-						ttl:   0,
+						value:  "value 1",
+						expire: time.Time{},
 					},
 				},
 			},
@@ -101,12 +102,12 @@ func Test_memcache_remove(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := &memcache{
+			m := &memCache{
 				store: tt.fields.store,
 			}
-			m.remove(tt.args.key)
+			m.Remove(tt.args.key)
 
-			got, ok := m.get(tt.args.key)
+			got, ok := m.Get(tt.args.key)
 
 			asserts := assert.New(t)
 			asserts.Equal(tt.want, got)

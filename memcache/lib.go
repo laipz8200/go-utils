@@ -1,17 +1,15 @@
 package memcache
 
-func Set(key string, value any) {
-	cache.setWithTTL(key, value, 0)
-}
+import "time"
 
-func SetWithTTL(key string, value any, ttl int64) {
-	cache.setWithTTL(key, value, ttl)
+func Set(key string, value any, ttl time.Duration) {
+	cache.Set(key, value, ttl)
 }
 
 func Get(key string) (any, bool) {
-	return cache.get(key)
+	return cache.Get(key)
 }
 
 func Remove(key string) {
-	cache.remove(key)
+	cache.Remove(key)
 }
